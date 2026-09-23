@@ -17,6 +17,14 @@ struct Customer{                                        //using struct to store 
     
 };
 
+struct ParkingRate{
+    double halfHours{};
+    double twoHours{};
+    double fourHours{};
+    double sixHours{}; 
+    double overHours{};
+};
+
 struct Parking{
     private:                                            //private members to be accessed only in the struct
         int total_slots{};
@@ -57,40 +65,151 @@ struct Parking{
             return -1;
         }
 
-        int charges(int time){                                          //function to calculate the charges to be paid
-            int rate{};
-            if(time <= 30){
-                rate = 0;
+        //ParkingRate rate{}
 
-                return rate;
+        void setRate(ParkingRate rate){
+            bool running = true;
+            do{
+                std::cout<< "\n SET THE RATE FOR \n";
+                std::cout<< "\t 1. Half hour\n";
+                std::cout<< "\t 2. Up to two hour\n";
+                std::cout<< "\t 3. Up to four hours\n";
+                std::cout<< "\t 4. Up to six hours\n";
+                std::cout<< "\t 5. Over six hours\n";
+                std::cout<< "\t 0. EXIT\n";
+                
+                int choice{};
+                std::cout<<"Enter your choice #: ";
+
+                if(!(std::cin>> choice)){
+                    std::cout<<"\n \a Error: Invalid input format. Please enter a number.\n";
+                    std::cin.clear();
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); 
+                    continue;
+                }
+                if(choice >= 0 && choice <= 5){
+                    switch(choice){
+                        case 0:{
+                            running = false;
+                            break;
+                        }
+                        case 1:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.halfHours <<" for half an hour";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.halfHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.halfHours <<" for half an hour";
+                                
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\n";
+                                std::cout<< "Invalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                        case 2:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.twoHours <<" up to two hours";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.twoHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.twoHours <<" up to two hours";
+                                
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\n";
+                                std::cout<< "Invalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                        case 3:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.fourHours <<" up to four hour";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.fourHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.fourHours <<" up to four hour";
+                                
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\n";
+                                std::cout<< "Invalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                        case 4:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.sixHours <<" up to six hour";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.sixHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.sixHours <<" up to six hour";
+                                
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\n";
+                                std::cout<< "Invalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                        case 5:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.overHours <<" for over six hour";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.overHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.overHours <<" for over six hour";
+                                
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\n";
+                                std::cout<< "Invalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                    }
+                }
+                else{
+                    std::cout<<"\n ERROR!! Invalid choice\n";
+                }
+            }while(running);
+        };
+
+        int charges(int time, ParkingRate const useRate){                                          //function to calculate the charges to be paid
+            
+            if(time <= 30){
+
+                return useRate.halfHours;
             }
 
             else if(time <= 120){
-                rate = 50;
 
-                return rate;
+                return useRate.twoHours;
             }
 
             else if(time <=240){
-                rate = 100;
 
-                return rate;
+                return useRate.fourHours;
             }
 
             else if(time <= 360){
-                rate = 300;
 
-                return rate;
+                return useRate.sixHours;
             }
             else{
-                rate = 500;
 
-                return rate;
+                return useRate.overHours;
             }
 
         }
 
-        bool checkOut(int slotIndex){                           //function to checkout, set as bool so can return a true,
+        bool checkOut(int slotIndex, ParkingRate const nowRate){                           //function to checkout, set as bool so can return a true,
             if(slotIndex < 0 || slotIndex >= total_slots){      //which means slot is now empty
                 std::cout<< "ERR!! INVALID SLOT NUMBER \n";         //this is displayed if slot entered does not exist
                 return false;
@@ -108,7 +227,7 @@ struct Parking{
 
 
             int fees{};
-            fees = charges(elapsed.count());                    //fees is assigned the charges to be paid
+            fees = charges(elapsed.count(), nowRate);                    //fees is assigned the charges to be paid
 
             std::cout << "\n time parked: " << elapsed.count() << "min\n";
             std::cout<< "THUS \n";

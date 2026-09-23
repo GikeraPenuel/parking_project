@@ -3,6 +3,7 @@
 
 int main(){
     Parking parkinglot(5);
+    ParkingRate rate{};
 
     //int remain{0};
 
@@ -14,7 +15,9 @@ int main(){
         std::cout<< "AVAILABLE SLOTS: "<< parkinglot.getEmptySlots()<<"\n"; 
         std::cout<< "\t 1. CHECK IN \n";
         std::cout<< "\t 2. CHECK OUT \n";
-        std::cout<< "\t 3. SLOT INFO\n";
+        std::cout<< "\t 3. SLOTS INFO\n";
+        std::cout<< "\t 0. ADMIN\n";
+
 
         std::cout<< "Enter a # choice: ";
         int choice{};                               //accepts user info
@@ -27,8 +30,12 @@ int main(){
             continue;
         }
 
-        if(choice == 1 || choice == 2 || choice == 3){          //ensures only valid choices are in
+        if(choice == 0 ||choice == 1 || choice == 2 || choice == 3){          //ensures only valid choices are in
             switch(choice){
+                case 0: {
+                    parkinglot.setRate(rate);
+                    break;
+                }
                 case 1: {
                     if(parkinglot.getEmptySlots() <= 0){
                         std::cout<< "NO AVAILABLE SLOTS... RETURN LATER \n";        //does not continue if no slots available to check in
@@ -86,7 +93,7 @@ int main(){
                     }
                     */
 
-                    parkinglot.checkOut(slotno);                            //calls the check out function
+                    parkinglot.checkOut(slotno, rate);                            //calls the check out function
 
                     break;
                 }
