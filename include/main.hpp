@@ -1,6 +1,8 @@
 #ifndef PARKING_HPP
 #define PARKING_HPP
 
+#include "crow_all.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
