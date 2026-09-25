@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Parking Lot System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="header-bar">
+        <h1>Parking Management System</h1>
+        <div class="login-card" id="loginArea">
+            <input type="password" id="adminPassInput" placeholder="Admin Password" style="margin-bottom:0; width: 140px;">
+            <button onclick="adminLogin()" style="width: auto;">Admin Login</button>
+        </div>
+        <div class="login-card" id="logoutArea" style="display:none;">
+            <span style="font-weight:bold; color:#28a745;">Admin Active</span>
+            <button onclick="adminLogout()" style="width: auto; background-color:#dc3545;">Logout</button>
+        </div>
+    </div>
+
+    <h2 id="slotSummary">Loading slots status...</h2>
+
+    <!-- Hidden for non-admins -->
+    <div id="slotsContainer" class="grid" style="display: none;"></div>
+
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div class="box">
+            <h3>CHECK IN</h3>
+            <input type="text" id="fname" placeholder="First Name">
+            <input type="text" id="sname" placeholder="Second Name">
+            <input type="text" id="plate" placeholder="Vehicle Number Plate">
+            <button onclick="checkIn()">Check In Vehicle</button>
+        </div>
+
+        <div class="box">
+            <h3>CHECK OUT</h3>
+            <input type="number" id="slotno" placeholder="Parking Slot Number #">
+            <button onclick="checkOut()">Check Out & Pay</button>
+        </div>
+
+        <!-- Admin Settings Box -->
+        <div class="box admin-box" id="adminPanel">
+            <h3>ADMIN SETTINGS</h3>
+            <label>Total Parking Slots</label>
+            <input type="number" id="totalSlotsInput" placeholder="Total Slots">
+            <button class="admin-btn" onclick="updateTotalSlots()">Update Slots Count</button>
+
+            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+
+            <label>Half Hour Rate (KSH)</label>
+            <input type="number" id="rateHalf" placeholder="Half Hour">
+            <label>Up to 2 Hours Rate (KSH)</label>
+            <input type="number" id="rateTwo" placeholder="2 Hours">
+            <label>Up to 4 Hours Rate (KSH)</label>
+            <input type="number" id="rateFour" placeholder="4 Hours">
+            <label>Up to 6 Hours Rate (KSH)</label>
+            <input type="number" id="rateSix" placeholder="6 Hours">
+            <label>Over 6 Hours Rate (KSH)</label>
+            <input type="number" id="rateOver" placeholder="Over 6 Hours">
+            <button class="admin-btn" onclick="updateRates()">Update Rates</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
