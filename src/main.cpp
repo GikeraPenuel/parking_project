@@ -3,6 +3,203 @@
 #include <limits>
 
 int main(){
+    crow::SimpleApp app;
+
+    
+
+    Parking parkinglot(5);
+    ParkingRate rate{};
+
+    
+    //serve HTML dash
+    
+    CROW_ROUTE(app, "/")([](){
+        crow::response res;
+        res.set_static_file_info("public/index.html");
+        return res;
+
+    });
+
+    // Serve style.css
+    CROW_ROUTE(app, "/style.css")([](){
+        crow::response res;
+        res.set_static_file_info("public/style.css");
+        return res;
+    });
+
+    // Serve script.js
+    CROW_ROUTE(app, "/script.js")([](){
+        crow::response res;
+        res.set_static_file_info("public/script.js");
+        return res;
+    });
+
+    //Admin authnetication
+    CROW_ROUTE(app, "/api/admin/login").methods(crow::HTTPMethod::POST)([&parkinglot](const crow::request& req){
+        auto body = crow::json::load(req.body);
+        crow::json::wvalue res;
+
+        if(!body || !body.has("password")){
+            res["success"] = false;
+            res["success"] = "Password required.";
+            return crow::response(400, res);
+        }
+
+        if(parkinglot.verifyAdmin(body["password"].s())){
+            res["success"] = true;
+            res["message"] = "Login successful!";
+            return crow::response(200, res);
+        }
+        else{
+            res["success"] = false;
+            res["message"] = "Incorrect admin password";
+            return crow::response(401, res);
+        }
+    });
+
+    //getting status and removing slot occupant info if not admin
+    CROW_ROUTE(app, "/api/status").methods(crow::HTTPMethod::GET)([&parkinglot](const crow::request& req){
+        std::string authPass = req.get_header_value("x-admin-pass");
+        bool isAdmin = parkinglot.verifyAdmin(authPass);
+
+            crow::json::wvalue response;
+            response["total_slots"] = parkinglot.getTotalSlot();
+            response["empty_slots"] = parkinglot.getEmptySlots();
+            response["slots"] = parkinglot.getSlotInfo(isAdmin);
+            return response;
+    });
+
+    //check in
+    CROW_ROUTE(app, "/api/checkin").methods(crow::HTTPMethod::POST)([&parkinglot](const crow::request& req){
+        auto body = crow::json::load(req.body);
+        crow::json::wvalue res;
+
+        if(!body){
+            res["success"] = false;
+            res["message"] = "Invalid JSON data.";
+            return crow::response(400, res);
+        }
+
+        if(parkinglot.getEmptySlots() <= 0){
+            res["success"] = false;
+            res["message"] = "NO AVAILABLE SLOTS ... RETURN LATER";
+            return crow::response(400, res);
+        }
+
+        Customer c{};
+        c.f_name = body["f_name"].s();
+        c.s_name = body["s_name"].s();
+        c.number_plate = body["number_plate"].s();
+        c.entryTime = std::chrono::steady_clock::now();
+
+        int slot = parkinglot.addCustomer(c);
+
+        res["success"] = true;
+        res["assigned_slot"] = slot;
+        return crow::response(200, res);
+    });
+
+    //checkout
+    CROW_ROUTE(app, "/api/checkout").methods(crow::HTTPMethod::POST)([&parkinglot, &rate](const crow::request& req){
+        auto body = crow::json::load(req.body);
+
+        if(!body || !body.has("slot_no")){
+            crow::json::wvalue err;
+            err["success"] = false;
+            err["message"] = "invalide payload.";
+            return crow::response(400, err);
+        }
+
+        int slot = body["slot_no"].i();
+        crow::json::wvalue result = parkinglot.checkOut(slot, rate);
+        return crow::response(200, result); 
+    });
+
+    //admin priviledge- get current rates
+    CROW_ROUTE(app, "/api/admin/rates").methods(crow::HTTPMethod::GET)([&parkinglot, &rate](const crow::request& req){
+        std::string authPass = req.get_header_value("x-admin-pass");
+        if(!parkinglot.verifyAdmin(authPass)){
+            return crow::response(401, "Unauthorised");
+        }
+
+        crow::json::wvalue res;
+        res["halfHours"] = rate.halfHours;
+        res["twoHours"] = rate.twoHours;
+        res["fourHours"] = rate.fourHours;
+        res["sixHours"] = rate.sixHours;
+        res["overHours"] = rate.overHours;
+
+        return crow::response(200, res);
+    });
+
+    //admin priviledge - update rates
+    CROW_ROUTE(app, "/api/admin/rates").methods(crow::HTTPMethod::POST)
+    ([&parkinglot, &rate](const crow::request& req) {
+        std::string authPass = req.get_header_value("x-admin-pass");
+        if (!parkinglot.verifyAdmin(authPass)) {
+            return crow::response(401, "Unauthorized");
+        }
+
+        auto body = crow::json::load(req.body);
+        crow::json::wvalue res;
+
+        if (!body) {
+            res["success"] = false;
+            res["message"] = "Invalid format.";
+            return crow::response(400, res);
+        }
+
+        if (body.has("halfHours")) rate.halfHours = body["halfHours"].d();
+        if (body.has("twoHours")) rate.twoHours = body["twoHours"].d();
+        if (body.has("fourHours")) rate.fourHours = body["fourHours"].d();
+        if (body.has("sixHours")) rate.sixHours = body["sixHours"].d();
+        if (body.has("overHours")) rate.overHours = body["overHours"].d();
+
+        res["success"] = true;
+        res["message"] = "Parking rates updated successfully!";
+        return crow::response(200, res);
+    });
+
+    //admin priviledge - update number of slots
+    CROW_ROUTE(app, "/api/admin/slots").methods(crow::HTTPMethod::POST)
+    ([&parkinglot](const crow::request& req) {
+        std::string authPass = req.get_header_value("x-admin-pass");
+        if (!parkinglot.verifyAdmin(authPass)) {
+            return crow::response(401, "Unauthorized");
+        }
+
+        auto body = crow::json::load(req.body);
+        crow::json::wvalue res;
+
+        if (!body || !body.has("total_slots")) {
+            res["success"] = false;
+            res["message"] = "Invalid input.";
+            return crow::response(400, res);
+        }
+
+        int newTotal = body["total_slots"].i();
+        if (parkinglot.setTotalSlots(newTotal)) {
+            res["success"] = true;
+            res["message"] = "Total parking slots updated successfully!";
+            return crow::response(200, res);
+        } else {
+            res["success"] = false;
+            res["message"] = "Total slots must be greater than 0.";
+            return crow::response(400, res);
+        }
+    });
+
+    
+
+    std::cout << "Starting Crow Web Server on http://localhost:8080\n";
+    app.port(8080).multithreaded().run();
+
+}
+
+/*
+int main(){
+    
+
     Parking parkinglot(5);
     ParkingRate rate{};
 
@@ -92,7 +289,7 @@ int main(){
                         std::cout<< "THUS \n";
                         std::cout<< "you are to pay KSH"<< fees;
                     }
-                    */
+                    fyi if you uncomment whole main please add a comment here that star followed by slash 
 
                     parkinglot.checkOut(slotno, rate);                            //calls the check out function
 
@@ -121,3 +318,4 @@ int main(){
 
     return 0;
 }
+*/

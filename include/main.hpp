@@ -8,7 +8,7 @@
 #include <vector>
 #include <chrono>
 
-const int Max_Customer{200}; //using a const int as the number of customers is not more than 200
+//const int Max_Customer{200}; //using a const int as the number of customers is not more than 200
 
 struct Customer{                                        //using struct to store variable of different types
     std::string f_name{};
@@ -20,11 +20,11 @@ struct Customer{                                        //using struct to store 
 };
 
 struct ParkingRate{
-    double halfHours{};
-    double twoHours{};
-    double fourHours{};
-    double sixHours{}; 
-    double overHours{};
+    double halfHours{50.0};
+    double twoHours{100.0};
+    double fourHours{200.0};
+    double sixHours{300.0}; 
+    double overHours{400.0};
 };
 
 struct Parking{
@@ -32,7 +32,7 @@ struct Parking{
         int total_slots{};
         std::vector<bool> slot_status;                  //this assigns boolean values to vectors as slot status
         std::vector<Customer> customers;                //this stores each customer information as a value in an array
-
+        std::string admin_password{"admin123"};         //default admin password
     public:
         Parking(int totalSlots)
             :total_slots(totalSlots), slot_status(totalSlots, true), customers(totalSlots){} //this is a constructor that sets totalslots
@@ -41,9 +41,22 @@ struct Parking{
                                                                                             //number of customers allowed is equal to
                                                                                             //number of totalslots
 
+        bool verifyAdmin(const std::string& pass) const{
+            return pass == admin_password; 
+        }
 
         int getTotalSlot(){                                                                 //a function to see number of slots
             return total_slots;                                 
+        }
+
+        bool setTotalSlots(int newTotal){
+            if(newTotal <= 0){
+                return false;
+            }
+            total_slots = newTotal;
+            slot_status.resize(newTotal, true);
+            customers.resize(newTotal);
+            return true;
         }
 
         int getEmptySlots() const {                                                         //a function to get empty slots
@@ -69,7 +82,7 @@ struct Parking{
 
         //ParkingRate rate{}
 
-        void setRate(ParkingRate rate){
+        /* void setRate(ParkingRate rate){
             bool running = true;
             do{
                 std::cout<< "\n SET THE RATE FOR \n";
@@ -182,6 +195,7 @@ struct Parking{
                 }
             }while(running);
         };
+        */
 
         int charges(int time, ParkingRate const useRate){                                          //function to calculate the charges to be paid
             
@@ -211,14 +225,19 @@ struct Parking{
 
         }
 
-        bool checkOut(int slotIndex, ParkingRate const nowRate){                           //function to checkout, set as bool so can return a true,
+        crow::json::wvalue checkOut(int slotIndex, ParkingRate const nowRate){                           //function to checkout, set as bool so can return a true,
+            crow::json::wvalue res;
             if(slotIndex < 0 || slotIndex >= total_slots){      //which means slot is now empty
-                std::cout<< "ERR!! INVALID SLOT NUMBER \n";         //this is displayed if slot entered does not exist
-                return false;
+                //std::cout<< "ERR!! INVALID SLOT NUMBER \n";         //this is displayed if slot entered does not exist
+                res["success"] = false;
+                res["message"] = "invalid slot number!";
+                return res;
             }
             if(slot_status[slotIndex]){
-                std::cout<< "Slot #"<< slotIndex << " is already empty \n";  //this is displayed if user try to checkout empty slot
-                return false;
+                //std::cout<< "Slot #"<< slotIndex << " is already empty \n";  //this is displayed if user try to checkout empty slot
+                res["success"] = false;
+                res["message"] = "Slot is already empty!";
+                return res;
             }
 
             auto currentTime = std::chrono::steady_clock::now(); //time during checkout
@@ -231,17 +250,24 @@ struct Parking{
             int fees{};
             fees = charges(elapsed.count(), nowRate);                    //fees is assigned the charges to be paid
 
-            std::cout << "\n time parked: " << elapsed.count() << "min\n";
+            /*std::cout << "\n time parked: " << elapsed.count() << "min\n";
             std::cout<< "THUS \n";
             std::cout<< "you are to pay KSH"<< fees<< "\n\n";
 
             std::cout<< "CAR: "<< customers[slotIndex].number_plate << " has checked out \n";
             std::cout<< "Slot no #"<< slotIndex << " is now empty";
+            */
+
+            res["success"] = true;
+            res["slot"] = slotIndex;
+            res["plate"] = customers[slotIndex].number_plate;
+            res["time_parked"] = elapsed.count();
+            res["fees"] = fees;
 
             slot_status[slotIndex] = true;                  //slotstatus is set to true which means empty
             customers[slotIndex] = Customer{};              //resets customer information in that slot
 
-            return true;
+            return res;
             
         }
 
@@ -251,7 +277,7 @@ struct Parking{
         }
         */
 
-        void printInfo(int slotIndex) const{                            //prints all info of customer in slot x
+        /*void printInfo(int slotIndex) const{                            //prints all info of customer in slot x
             if(slotIndex >= 0 && slotIndex < total_slots){
                 if(!slot_status[slotIndex]){
                     std::cout<< "\n \t \t Slot no #" << slotIndex<< "\n";
@@ -265,6 +291,25 @@ struct Parking{
                 }
             }
         }
+        */
+        crow::json::wvalue getSlotInfo(bool isAdmin) const {
+            crow::json::wvalue list = crow::json::wvalue::list();
+
+            for(int i = 0; i < total_slots; i++){
+                crow::json::wvalue item;
+                item["slot_no"] = i;
+                item["is_empty"] = slot_status[i];
+
+                //send if is it an admin
+
+                if(isAdmin && !slot_status[i]){
+                    item["occupant"] = customers[i].f_name + " " + customers[i].s_name;
+                    item["plate"] = customers[i].number_plate;
+                }
+                list[i] = std::move(item);
+            }
+            return list;
+       }
 };
 
 #endif
