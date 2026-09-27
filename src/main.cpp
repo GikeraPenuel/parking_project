@@ -35,7 +35,7 @@ int main(){
     });
 
     //Admin authnetication
-    CROW_ROUTE(app, "/api/admin/login").methods(crow::HTTPMethod::POST)([&parkinglot](const crow::request& req){
+    CROW_ROUTE(app, "/api/admin/login").methods(crow::HTTPMethod::Post)([&parkinglot](const crow::request& req){
         auto body = crow::json::load(req.body);
         crow::json::wvalue res;
 
@@ -58,7 +58,7 @@ int main(){
     });
 
     //getting status and removing slot occupant info if not admin
-    CROW_ROUTE(app, "/api/status").methods(crow::HTTPMethod::GET)([&parkinglot](const crow::request& req){
+    CROW_ROUTE(app, "/api/status").methods(crow::HTTPMethod::Get)([&parkinglot](const crow::request& req){
         std::string authPass = req.get_header_value("x-admin-pass");
         bool isAdmin = parkinglot.verifyAdmin(authPass);
 
@@ -70,7 +70,7 @@ int main(){
     });
 
     //check in
-    CROW_ROUTE(app, "/api/checkin").methods(crow::HTTPMethod::POST)([&parkinglot](const crow::request& req){
+    CROW_ROUTE(app, "/api/checkin").methods(crow::HTTPMethod::Post)([&parkinglot](const crow::request& req){
         auto body = crow::json::load(req.body);
         crow::json::wvalue res;
 
@@ -100,7 +100,7 @@ int main(){
     });
 
     //checkout
-    CROW_ROUTE(app, "/api/checkout").methods(crow::HTTPMethod::POST)([&parkinglot, &rate](const crow::request& req){
+    CROW_ROUTE(app, "/api/checkout").methods(crow::HTTPMethod::Post)([&parkinglot, &rate](const crow::request& req){
         auto body = crow::json::load(req.body);
 
         if(!body || !body.has("slot_no")){
@@ -116,7 +116,7 @@ int main(){
     });
 
     //admin priviledge- get current rates
-    CROW_ROUTE(app, "/api/admin/rates").methods(crow::HTTPMethod::GET)([&parkinglot, &rate](const crow::request& req){
+    CROW_ROUTE(app, "/api/admin/rates").methods(crow::HTTPMethod::Get)([&parkinglot, &rate](const crow::request& req){
         std::string authPass = req.get_header_value("x-admin-pass");
         if(!parkinglot.verifyAdmin(authPass)){
             return crow::response(401, "Unauthorised");
@@ -133,7 +133,7 @@ int main(){
     });
 
     //admin priviledge - update rates
-    CROW_ROUTE(app, "/api/admin/rates").methods(crow::HTTPMethod::POST)
+    CROW_ROUTE(app, "/api/admin/rates").methods(crow::HTTPMethod::Post)
     ([&parkinglot, &rate](const crow::request& req) {
         std::string authPass = req.get_header_value("x-admin-pass");
         if (!parkinglot.verifyAdmin(authPass)) {
@@ -161,7 +161,7 @@ int main(){
     });
 
     //admin priviledge - update number of slots
-    CROW_ROUTE(app, "/api/admin/slots").methods(crow::HTTPMethod::POST)
+    CROW_ROUTE(app, "/api/admin/slots").methods(crow::HTTPMethod::Post)
     ([&parkinglot](const crow::request& req) {
         std::string authPass = req.get_header_value("x-admin-pass");
         if (!parkinglot.verifyAdmin(authPass)) {
