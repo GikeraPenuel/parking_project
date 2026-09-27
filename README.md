@@ -22,7 +22,7 @@ A web based parking management system
         ```bash 
             git clone  https://github.com/GikeraPenuel/parking_project.git
         ```
-  - go to the root of the project  ```bash cd ~/your/folder/parking_project ```
+  - go to the root of the project  ```bash cd ~/"your_folder"/parking_project ```
   - Run the program: 
                     ``` bash 
                             ./parking 
