@@ -31,6 +31,7 @@ A web based parking management system
                             ./parking 
                     ```
   - go to your browser and type ` http://localhost:8080 ` and expect a result
+  - default admin password is ` admin123 `
 
   ## Windows
   - clone the repository:
@@ -46,6 +47,8 @@ A web based parking management system
             .\parking.exe 
         ```
   - go to your browser and type ` http://localhost:8080 ` and expect a result
+  - default admin password is ` admin123 `
+
   - NOTE! Please do not run from folder in file explorer as executable as it may cause some issues with dependencies and file paths... i learnt the hard way
 
 
