@@ -19,7 +19,8 @@ struct Customer{                                        //using struct to store 
     
 };
 
-struct ParkingRate{
+
+struct ParkingRate{  //struct for storing rates for parking
     double halfHours{50.0};
     double twoHours{100.0};
     double fourHours{200.0};
@@ -30,9 +31,9 @@ struct ParkingRate{
 struct Parking{
     private:                                            //private members to be accessed only in the struct
         int total_slots{};
-        std::vector<bool> slot_status;                  //this assigns boolean values to vectors as slot status
+        std::vector<bool> slot_status;                  //this assigns boolean values to vectors as slot status true = empty, false = occupied
         std::vector<Customer> customers;                //this stores each customer information as a value in an array
-        std::string admin_password{"admin123"};         //default admin password
+        std::string admin_password{"admin123"};         //default hardcoded admin password
     public:
         Parking(int totalSlots)
             :total_slots(totalSlots), slot_status(totalSlots, true), customers(totalSlots){} //this is a constructor that sets totalslots
@@ -41,15 +42,15 @@ struct Parking{
                                                                                             //number of customers allowed is equal to
                                                                                             //number of totalslots
 
-        bool verifyAdmin(const std::string& pass) const{
+        bool verifyAdmin(const std::string& pass) const{       //authenticates if password entered is same the hardcoded one
             return pass == admin_password; 
         }
 
-        int getTotalSlot(){                                                                 //a function to see number of slots
+        int getTotalSlot(){                                                                 //a function to see total number  of slots
             return total_slots;                                 
         }
 
-        bool setTotalSlots(int newTotal){
+        bool setTotalSlots(int newTotal){       //// Dynamically adjusts total capacity and resizes backing vectors while preserving valid states
             if(newTotal <= 0){
                 return false;
             }
@@ -225,16 +226,14 @@ struct Parking{
 
         }
 
-        crow::json::wvalue checkOut(int slotIndex, ParkingRate const nowRate){                           //function to checkout, set as bool so can return a true,
+        crow::json::wvalue checkOut(int slotIndex, ParkingRate const nowRate){         // Processes checkout for a given slot:
             crow::json::wvalue res;
-            if(slotIndex < 0 || slotIndex >= total_slots){      //which means slot is now empty
-                //std::cout<< "ERR!! INVALID SLOT NUMBER \n";         //this is displayed if slot entered does not exist
+            if(slotIndex < 0 || slotIndex >= total_slots){      //check if slot exists
                 res["success"] = false;
                 res["message"] = "invalid slot number!";
                 return res;
             }
-            if(slot_status[slotIndex]){
-                //std::cout<< "Slot #"<< slotIndex << " is already empty \n";  //this is displayed if user try to checkout empty slot
+            if(slot_status[slotIndex]){        //checks if slot is occupied or empty
                 res["success"] = false;
                 res["message"] = "Slot is already empty!";
                 return res;
@@ -243,21 +242,15 @@ struct Parking{
             auto currentTime = std::chrono::steady_clock::now(); //time during checkout
 
             //auto checkoutTime = parkinglot.getTime(slotno);
-                                                                                    //the elapsed time is calculated
-            auto elapsed = std::chrono::duration_cast<std::chrono::minutes> (currentTime - customers[slotIndex].entryTime);
+                                                                                   
+            auto elapsed = std::chrono::duration_cast<std::chrono::minutes> (currentTime - customers[slotIndex].entryTime);   //the elapsed time is calculated
 
-
+            
             int fees{};
             fees = charges(elapsed.count(), nowRate);                    //fees is assigned the charges to be paid
 
-            /*std::cout << "\n time parked: " << elapsed.count() << "min\n";
-            std::cout<< "THUS \n";
-            std::cout<< "you are to pay KSH"<< fees<< "\n\n";
-
-            std::cout<< "CAR: "<< customers[slotIndex].number_plate << " has checked out \n";
-            std::cout<< "Slot no #"<< slotIndex << " is now empty";
-            */
-
+            
+            // Populate successful response JSON payload
             res["success"] = true;
             res["slot"] = slotIndex;
             res["plate"] = customers[slotIndex].number_plate;
@@ -271,28 +264,8 @@ struct Parking{
             
         }
 
-        /*
-        auto getTime(int slotIndex){
-            return customers[slotIndex].entryTime;
-        }
-        */
-
-        /*void printInfo(int slotIndex) const{                            //prints all info of customer in slot x
-            if(slotIndex >= 0 && slotIndex < total_slots){
-                if(!slot_status[slotIndex]){
-                    std::cout<< "\n \t \t Slot no #" << slotIndex<< "\n";
-                    std::cout<< "\t \t occupant: ";
-                    std::cout << customers[slotIndex].f_name << " ";
-                    std::cout << customers[slotIndex].s_name << "\n";
-                    std::cout << "\t \t PLATE: " << customers[slotIndex].number_plate << "\n";
-                }
-                else{                                                   //prints if no customer is assigned there
-                    std::cout<< "Slot no #"<< slotIndex << " is empty. \n";
-                }
-            }
-        }
-        */
-        crow::json::wvalue getSlotInfo(bool isAdmin) const {
+        
+        crow::json::wvalue getSlotInfo(bool isAdmin) const {      // Serializes all slots into JSON format; sanitizes sensitive occupant data if requester is not an admin
             crow::json::wvalue list = crow::json::wvalue::list();
 
             for(int i = 0; i < total_slots; i++){
@@ -300,9 +273,8 @@ struct Parking{
                 item["slot_no"] = i;
                 item["is_empty"] = slot_status[i];
 
-                //send if is it an admin
 
-                if(isAdmin && !slot_status[i]){
+                if(isAdmin && !slot_status[i]){ //prints all info if it is an admin
                     item["occupant"] = customers[i].f_name + " " + customers[i].s_name;
                     item["plate"] = customers[i].number_plate;
                 }
@@ -311,5 +283,137 @@ struct Parking{
             return list;
        }
 };
+
+/* ==========================================
+ * LEGACY CLI SETTERS & RENDERERS
+ * ==========================================
+ * The following methods were used prior to migrating the application to Crow REST APIs.
+
+        // Interactive CLI menu for adjusting rates on console input
+        void setRate(ParkingRate rate){
+            bool running = true;
+            do{
+                std::cout<< "\n SET THE RATE FOR \n";
+                std::cout<< "\t 1. Half hour\n";
+                std::cout<< "\t 2. Up to two hour\n";
+                std::cout<< "\t 3. Up to four hours\n";
+                std::cout<< "\t 4. Up to six hours\n";
+                std::cout<< "\t 5. Over six hours\n";
+                std::cout<< "\t 0. EXIT\n";
+                
+                int choice{};
+                std::cout<<"Enter your choice #: ";
+
+                if(!(std::cin>> choice)){
+                    std::cout<<"\n \a Error: Invalid input format. Please enter a number.\n";
+                    std::cin.clear();
+                    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); 
+                    continue;
+                }
+                if(choice >= 0 && choice <= 5){
+                    switch(choice){
+                        case 0:{
+                            running = false;
+                            break;
+                        }
+                        case 1:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.halfHours <<" for half an hour";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.halfHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.halfHours <<" for half an hour";
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\nInvalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                        case 2:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.twoHours <<" up to two hours";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.twoHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.twoHours <<" up to two hours";
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\nInvalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                        case 3:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.fourHours <<" up to four hour";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.fourHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.fourHours <<" up to four hour";
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\nInvalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                        case 4:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.sixHours <<" up to six hour";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.sixHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.sixHours <<" up to six hour";
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\nInvalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                        case 5:{
+                            std::cout<< "\ncurrent parking rate is:KSH "<< rate.overHours <<" for over six hour";
+                            std::cout<< "\n Enter new rate:";
+                            if(std::cin>> rate.overHours){
+                                std::cout<< "\n CHANGE SUCCESSFUL \n";
+                                std::cout<< "\n New parking rate is:KSH "<< rate.overHours <<" for over six hour";
+                            }
+                            else{
+                                std::cout<< "\n\a ERROR\nInvalid Input\n";
+                                std::cin.clear();
+                                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                            }
+                            break;
+                        }
+                    }
+                }
+                else{
+                    std::cout<<"\n ERROR!! Invalid choice\n";
+                }
+            }while(running);
+        }
+
+        // Returns entry time point for a slot
+        auto getTime(int slotIndex){
+            return customers[slotIndex].entryTime;
+        }
+
+        // Terminal printer for displaying slot occupant information
+        void printInfo(int slotIndex) const{
+            if(slotIndex >= 0 && slotIndex < total_slots){
+                if(!slot_status[slotIndex]){
+                    std::cout<< "\n \t \t Slot no #" << slotIndex<< "\n";
+                    std::cout<< "\t \t occupant: ";
+                    std::cout << customers[slotIndex].f_name << " ";
+                    std::cout << customers[slotIndex].s_name << "\n";
+                    std::cout << "\t \t PLATE: " << customers[slotIndex].number_plate << "\n";
+                }
+                else{
+                    std::cout<< "Slot no #"<< slotIndex << " is empty. \n";
+                }
+            }
+        }
+*/
 
 #endif

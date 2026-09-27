@@ -3,17 +3,16 @@
 #include <limits>
 
 int main(){
-    crow::SimpleApp app;
 
-    
+    crow::SimpleApp app;   // Initialize the Crow web framework 
 
-    Parking parkinglot(5);
+
+    Parking parkinglot(5);  // Instantiate the parking lot with 5 initial slots and default pricing rates
     ParkingRate rate{};
 
+                                    // STATIC FILE ROUTES (FRONTEND SERVING)
     
-    //serve HTML dash
-    
-    CROW_ROUTE(app, "/")([](){
+    CROW_ROUTE(app, "/")([](){   // Serve the main HTML dashboard at the root URL
         crow::response res;
         res.set_static_file_info("public/index.html");
         return res;
@@ -34,18 +33,20 @@ int main(){
         return res;
     });
 
-    //Admin authnetication
+                                        // API ROUTES
+
+    //Admin authnetication for password
     CROW_ROUTE(app, "/api/admin/login").methods(crow::HTTPMethod::Post)([&parkinglot](const crow::request& req){
         auto body = crow::json::load(req.body);
         crow::json::wvalue res;
 
-        if(!body || !body.has("password")){
+        if(!body || !body.has("password")){  // Ensure JSON body exists and contains the "password" key 
             res["success"] = false;
             res["success"] = "Password required.";
             return crow::response(400, res);
         }
 
-        if(parkinglot.verifyAdmin(body["password"].s())){
+        if(parkinglot.verifyAdmin(body["password"].s())){    // Verify credentials
             res["success"] = true;
             res["message"] = "Login successful!";
             return crow::response(200, res);
@@ -57,7 +58,7 @@ int main(){
         }
     });
 
-    //getting status and removing slot occupant info if not admin
+    //getting all slot status and removing slot occupant info if not admin
     CROW_ROUTE(app, "/api/status").methods(crow::HTTPMethod::Get)([&parkinglot](const crow::request& req){
         std::string authPass = req.get_header_value("x-admin-pass");
         bool isAdmin = parkinglot.verifyAdmin(authPass);
@@ -69,7 +70,7 @@ int main(){
             return response;
     });
 
-    //check in
+    //check in and assignment of slot
     CROW_ROUTE(app, "/api/checkin").methods(crow::HTTPMethod::Post)([&parkinglot](const crow::request& req){
         auto body = crow::json::load(req.body);
         crow::json::wvalue res;
@@ -80,13 +81,13 @@ int main(){
             return crow::response(400, res);
         }
 
-        if(parkinglot.getEmptySlots() <= 0){
+        if(parkinglot.getEmptySlots() <= 0){    // Check if parking capacity is reached
             res["success"] = false;
             res["message"] = "NO AVAILABLE SLOTS ... RETURN LATER";
             return crow::response(400, res);
         }
 
-        Customer c{};
+        Customer c{}; //add customer data
         c.f_name = body["f_name"].s();
         c.s_name = body["s_name"].s();
         c.number_plate = body["number_plate"].s();
@@ -99,11 +100,11 @@ int main(){
         return crow::response(200, res);
     });
 
-    //checkout
+    //checkout 
     CROW_ROUTE(app, "/api/checkout").methods(crow::HTTPMethod::Post)([&parkinglot, &rate](const crow::request& req){
         auto body = crow::json::load(req.body);
 
-        if(!body || !body.has("slot_no")){
+        if(!body || !body.has("slot_no")){   //check request for body and if slot umber exist
             crow::json::wvalue err;
             err["success"] = false;
             err["message"] = "invalide payload.";
@@ -111,7 +112,7 @@ int main(){
         }
 
         int slot = body["slot_no"].i();
-        crow::json::wvalue result = parkinglot.checkOut(slot, rate);
+        crow::json::wvalue result = parkinglot.checkOut(slot, rate);  //pass on to the checkout function in main.hpp
         return crow::response(200, result); 
     });
 
@@ -197,6 +198,10 @@ int main(){
 }
 
 /*
+
+//==========================================================//
+// THE FOLLOWING WAS USED FOR CONSOLE VERSION //
+//==========================================================//
 int main(){
     
 
