@@ -41,6 +41,6 @@ A web based parking management system
         ```powershell 
             .\parking.exe 
         ```
-  - NOTE! Please do not run from folder as executable as it may cause some issues with dependencies and file paths... i learnt the hard way
+  - NOTE! Please do not run from folder in file explorer as executable as it may cause some issues with dependencies and file paths... i learnt the hard way
 
 
